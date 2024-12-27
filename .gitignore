@@ -1,0 +1,51 @@
+# Data files and directories
+data/
+*.csv
+*.json
+*.db
+*.sqlite
+*.sqlite3
+*.xls
+*.xlsx
+*.dat
+*.data
+*.txt
+*.log 
+# 取消忽略示例数据
+!data/example.csv
+!data/sample.json 
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+eggs/
+*.egg
+
+# Virtual environments
+venv/
+env/
+.env
+.venv/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Testing
+.coverage
+coverage.xml
+htmlcov/
+.pytest_cache/
+.tox/
+nosetests.xml 

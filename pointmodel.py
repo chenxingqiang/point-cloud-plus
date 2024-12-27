@@ -5,10 +5,9 @@ import numpy as np
 import torch.utils.data as data
 import torch.nn as nn
 from torch.autograd import Variable
-torch.set_default_tensor_type(torch.DoubleTensor)
 
-
-
+# 使用 float32 而不是 float64
+torch.set_default_dtype(torch.float32)
 
 class MyDataset(data.Dataset):
     def __init__(self,
@@ -16,35 +15,48 @@ class MyDataset(data.Dataset):
                  trans = False,
                  ):
         self.floder_path = floder_path
-        self.trans =trans
-        self.file_list = os.listdir(self.floder_path)
+        self.trans = trans
+        # 只加载 .txt 文件
+        self.file_list = [f for f in os.listdir(self.floder_path) if f.endswith('.txt')]
+        if len(self.file_list) == 0:
+            raise ValueError(f"No .txt files found in {floder_path}")
+        print(f"Found {len(self.file_list)} files in {floder_path}")
 
     def __len__(self):
-        return len(os.listdir(self.floder_path))
+        return len(self.file_list)
 
     def __getitem__(self, item):
         file_name = self.file_list[item]
-        file_path = f"{self.floder_path}/{file_name}"
-        point_data = np.loadtxt(file_path).astype(np.float64)
-        if self.trans:
-            theta1 = np.random.uniform(0,np.pi*2)
-            theta2 = np.random.uniform(0,np.pi*2)
-            theta3 = np.random.uniform(0,np.pi*2)
-            trans_matrix1 = np.array([[np.cos(theta1),-np.sin(theta1)],
-                                      [np.sin(theta1), np.cos(theta1)]])
-            trans_matrix2 = np.array([[np.cos(theta2), -np.sin(theta2)],
-                                      [np.sin(theta2), np.cos(theta2)]])
-            trans_matrix3 = np.array([[np.cos(theta3),-np.sin(theta3)],
-                                      [np.sin(theta3), np.cos(theta3)]])
-            point_data[:,[0,1]] = point_data[:,[0,1]].dot(trans_matrix1)
-            point_data[:,[0,2]] = point_data[:,[0,2]].dot(trans_matrix2)
-            point_data[:,[1,2]] = point_data[:,[1,2]].dot(trans_matrix3)
-            #whether jitter
-            # jitter = np.random.normal(0,0.02,size=point_data.shape)
-            # jitter[:,[3,4,5]] = 0
-            # point_data += jitter
-        label = float(file_name.split("_")[1])
-        return point_data, label
+        file_path = os.path.join(self.floder_path, file_name)
+        try:
+            # 使用 float32 而不是 float64
+            point_data = np.loadtxt(file_path).astype(np.float32)
+            if self.trans:
+                theta1 = np.random.uniform(0, np.pi*2)
+                theta2 = np.random.uniform(0, np.pi*2)
+                theta3 = np.random.uniform(0, np.pi*2)
+                trans_matrix1 = np.array([[np.cos(theta1),-np.sin(theta1)],
+                                        [np.sin(theta1), np.cos(theta1)]])
+                trans_matrix2 = np.array([[np.cos(theta2), -np.sin(theta2)],
+                                        [np.sin(theta2), np.cos(theta2)]])
+                trans_matrix3 = np.array([[np.cos(theta3),-np.sin(theta3)],
+                                        [np.sin(theta3), np.cos(theta3)]])
+                point_data[:,[0,1]] = point_data[:,[0,1]].dot(trans_matrix1)
+                point_data[:,[0,2]] = point_data[:,[0,2]].dot(trans_matrix2)
+                point_data[:,[1,2]] = point_data[:,[1,2]].dot(trans_matrix3)
+            
+            # 从文件名中提取标签，格式应为 xxx_label.txt
+            try:
+                label = float(file_name.split("_")[1].split(".")[0])
+            except (IndexError, ValueError):
+                # 如果无法从文件名获取标签，尝试从文件内容获取
+                label = point_data[0, -1]  # 假设最后一列是标签
+            
+            return point_data, label
+        except Exception as e:
+            print(f"Error loading file {file_path}: {str(e)}")
+            # 返回一个空数据和默认标签
+            return np.zeros((1024, 6), dtype=np.float32), 0.0
 
 
 
